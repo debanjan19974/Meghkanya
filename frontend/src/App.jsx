@@ -275,6 +275,18 @@ export default function App() {
     }
   }
 
+  const lowStockCount = useMemo(
+    () => products.filter((item) => Number(item.stock_quantity) <= 5).length,
+    [products]
+  );
+  const totalStockValue = useMemo(
+    () =>
+      products.reduce(
+        (sum, item) => sum + Number(item.sell_price || 0) * Number(item.stock_quantity || 0),
+        0
+      ),
+    [products]
+  );
   const billingSubtotal = useMemo(
     () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
     [cart]
@@ -415,12 +427,31 @@ export default function App() {
         <div>
           <p className="eyebrow">Inventory and Billing</p>
           <h1>Meghkanya</h1>
-          <p>Barcode-first inventory management and checkout workspace.</p>
+          <p>Barcode-first inventory management and checkout workspace with fast product lookup and sales flow.</p>
         </div>
         <button className="secondary-button" onClick={handleLogout}>
           Logout
         </button>
       </header>
+
+      <div className="summary-cards">
+        <div className="summary-card">
+          <span>Total Products</span>
+          <strong>{products.length}</strong>
+        </div>
+        <div className="summary-card">
+          <span>Low Stock Items</span>
+          <strong>{lowStockCount}</strong>
+        </div>
+        <div className="summary-card">
+          <span>Stock Value</span>
+          <strong>Rs {totalStockValue.toFixed(2)}</strong>
+        </div>
+        <div className="summary-card">
+          <span>Current Cart</span>
+          <strong>{cart.length} items</strong>
+        </div>
+      </div>
 
       {message && <div className="message">{message}</div>}
 
@@ -444,11 +475,19 @@ export default function App() {
       {activeWorkspace === "products" ? (
         <>
           <section className="card">
-            <h2>Barcode Scan</h2>
+            <div className="section-headline">
+              <div>
+                <h2>Product Lookup</h2>
+                <p className="help-text">Scan a barcode or enter one manually to view stock and update inventory quickly.</p>
+              </div>
+              <button className="secondary-button" type="button" onClick={loadProducts}>
+                Refresh Products
+              </button>
+            </div>
             <div className="row">
               <input
                 ref={barcodeInputRef}
-                placeholder="Scan barcode here (USB scanner)"
+                placeholder="Scan or type barcode here"
                 value={barcode}
                 onChange={(e) => setBarcode(e.target.value)}
                 onKeyDown={(e) => {
@@ -462,15 +501,23 @@ export default function App() {
             </div>
             {scanResult && (
               <div className="scan-box">
-                <strong>{scanResult.name}</strong>
-                <span>Barcode: {scanResult.barcode}</span>
-                <span>Selling Price: Rs {scanResult.sell_price}</span>
-                <span>Stock: {scanResult.stock_quantity}</span>
+                <div className="section-headline">
+                  <strong>{scanResult.name}</strong>
+                  <span className="badge">{scanResult.category || "No category"}</span>
+                </div>
+                <div className="grid grid-2">
+                  <div>Barcode: {scanResult.barcode}</div>
+                  <div>Stock: {scanResult.stock_quantity}</div>
+                  <div>Buy Price: Rs {scanResult.buy_price}</div>
+                  <div>Sell Price: Rs {scanResult.sell_price}</div>
+                </div>
                 <div className="row">
                   <input
                     type="number"
+                    min="-999"
                     value={stockChange}
                     onChange={(e) => setStockChange(e.target.value)}
+                    aria-label="Stock adjustment amount"
                   />
                   <button onClick={handleAdjustStock}>Adjust Stock</button>
                 </div>
@@ -479,8 +526,13 @@ export default function App() {
           </section>
 
           <section className="card">
-            <h2>Add Product</h2>
-            <form className="grid" onSubmit={handleCreateProduct}>
+            <div className="section-headline">
+              <div>
+                <h2>Add New Product</h2>
+                <p className="help-text">Add your saree products, set pricing, and enter opening stock levels.</p>
+              </div>
+            </div>
+            <form className="grid product-form" onSubmit={handleCreateProduct}>
               <input
                 required
                 placeholder="Barcode"
@@ -524,6 +576,46 @@ export default function App() {
               />
               <button type="submit">Save Product</button>
             </form>
+          </section>
+
+          <section className="card">
+            <div className="section-headline">
+              <div>
+                <h2>Inventory List</h2>
+                <p className="help-text">Products are ordered by latest added. Low stock items are highlighted for easy restocking.</p>
+              </div>
+            </div>
+            <div className="table-wrapper">
+              <table className="product-table">
+                <thead>
+                  <tr>
+                    <th>SKU</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map((item) => (
+                    <tr key={item.id} className={Number(item.stock_quantity) <= 5 ? "row-low-stock" : ""}>
+                      <td>{item.barcode}</td>
+                      <td>{item.name}</td>
+                      <td>{item.category || "—"}</td>
+                      <td>Rs {Number(item.sell_price).toFixed(2)}</td>
+                      <td>{item.stock_quantity}</td>
+                    </tr>
+                  ))}
+                  {!products.length && (
+                    <tr>
+                      <td colSpan={5} className="empty-state">
+                        No products yet. Add a product to start managing inventory.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </section>
         </>
       ) : (
