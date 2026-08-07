@@ -748,6 +748,7 @@ export default function App() {
               <div className="invoice-preview">
                 <div className="invoice-header">
                   <div className="shipping-block">
+                    <img className="invoice-logo" src="/logo/4.jpeg" alt="Meghkanya logo" />
                     <strong>Shipping Address</strong>
                     <p>{lastInvoice.shipping_address}</p>
                     <p>{lastInvoice.customer_name}</p>
@@ -812,7 +813,9 @@ export default function App() {
                   </div>
                   <div className="invoice-signature">
                     <p>Authorized Signatory</p>
-                    <div className="signature-box">Meghkanya</div>
+                    <div className="signature-box image-signature">
+                      <img src="/logo/Signeture.png" alt="Authorized signature" />
+                    </div>
                   </div>
                 </div>
               </div>
