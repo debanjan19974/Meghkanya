@@ -427,6 +427,7 @@ td {
   padding: 18px;
   display: grid;
   gap: 20px;
+  max-width: 900px;
 }
 
 .invoice-header,
@@ -436,11 +437,18 @@ td {
   display: flex;
   justify-content: space-between;
   gap: 20px;
+  flex-wrap: wrap;
+}
+
+.invoice-meta {
+  min-width: 220px;
+  text-align: right;
 }
 
 .invoice-header div,
 .invoice-buyer div {
   flex: 1;
+  min-width: 240px;
 }
 
 .invoice-meta p,
@@ -483,7 +491,7 @@ td {
 .total-box {
   background: #eff6ff;
   border-radius: 12px;
-  padding: 14px;
+  padding: 16px;
   text-align: right;
 }
 

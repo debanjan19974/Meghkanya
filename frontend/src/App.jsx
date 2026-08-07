@@ -43,11 +43,10 @@ export default function App() {
   const [shippingAddress, setShippingAddress] = useState("");
   const [lastInvoice, setLastInvoice] = useState(null);
   const companyInfo = {
-    name: "Meghkanya Saree Retail Pvt. Ltd.",
-    address: "123 Textile Market, Kolkata, West Bengal",
-    phone: "+91 98765 43210",
-    email: "support@meghkanya.com",
-    gst: "GSTIN: 19ABCDE1234F1Z5"
+    name: "Meghkanya",
+    address: "Colonelgola, Midnapore, West Bengal 721101",
+    phone: "95475 99371",
+    email: "Meghkanya.official@gmail.com"
   };
   const [message, setMessage] = useState("");
   const barcodeInputRef = useRef(null);
@@ -752,7 +751,6 @@ export default function App() {
                     <h3>{companyInfo.name}</h3>
                     <p>{companyInfo.address}</p>
                     <p>{companyInfo.phone} | {companyInfo.email}</p>
-                    <p>{companyInfo.gst}</p>
                   </div>
                   <div className="invoice-meta">
                     <p><strong>Invoice:</strong> {lastInvoice.invoice_no}</p>
@@ -799,7 +797,6 @@ export default function App() {
                   <div>
                     <p>Subtotal: Rs {Number(lastInvoice.subtotal).toFixed(2)}</p>
                     <p>Discount: Rs {Number(lastInvoice.discount_amount).toFixed(2)}</p>
-                    <p>GST: Rs {Number(lastInvoice.gst_amount).toFixed(2)}</p>
                   </div>
                   <div className="total-box">
                     <strong>Total Payable</strong>
@@ -810,7 +807,7 @@ export default function App() {
                 <div className="invoice-signature">
                   <div>
                     <p>Authorized Signatory</p>
-                    <div className="signature-box">Digital Signature</div>
+                    <div className="signature-box">Meghkanya</div>
                   </div>
                 </div>
               </div>
@@ -844,7 +841,6 @@ export default function App() {
                           <h1>${companyInfo.name}</h1>
                           <p>${companyInfo.address}</p>
                           <p>${companyInfo.phone} | ${companyInfo.email}</p>
-                          <p>${companyInfo.gst}</p>
                         </div>
                         <div class="details">
                           <table>
@@ -888,7 +884,6 @@ export default function App() {
                           <table>
                             <tr><td><strong>Subtotal</strong></td><td>Rs ${Number(lastInvoice.subtotal).toFixed(2)}</td></tr>
                             <tr><td><strong>Discount</strong></td><td>Rs ${Number(lastInvoice.discount_amount).toFixed(2)}</td></tr>
-                            <tr><td><strong>GST</strong></td><td>Rs ${Number(lastInvoice.gst_amount).toFixed(2)}</td></tr>
                             <tr class="total-row"><td><strong>Total Payable</strong></td><td>Rs ${Number(lastInvoice.total_amount).toFixed(2)}</td></tr>
                           </table>
                         </div>
