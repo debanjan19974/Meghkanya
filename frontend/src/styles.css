@@ -419,16 +419,19 @@ td {
 .invoice-note {
   margin-top: 20px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
 }
 
 .invoice-preview {
   background: #ffffff;
   border: 1px solid rgba(59, 130, 246, 0.15);
   border-radius: 16px;
-  padding: 18px;
+  padding: 24px;
   display: grid;
-  gap: 20px;
+  gap: 24px;
   width: min(100%, 900px);
   margin: 0 auto;
 }
@@ -437,16 +440,30 @@ td {
 .invoice-buyer,
 .invoice-summary,
 .invoice-signature {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
   gap: 20px;
-  flex-wrap: wrap;
-  align-items: flex-start;
+}
+
+.invoice-header {
+  grid-template-columns: minmax(240px, 1fr) auto;
+  align-items: start;
+}
+
+.invoice-buyer {
+  grid-template-columns: 1fr;
+}
+
+.invoice-summary {
+  grid-template-columns: 1fr auto;
+  align-items: end;
+}
+
+.invoice-signature {
+  justify-items: start;
 }
 
 .invoice-meta {
   min-width: 220px;
-  flex: 0 0 220px;
   text-align: right;
 }
 
@@ -467,6 +484,12 @@ td {
 .invoice-summary p {
   margin: 4px 0;
   color: #0f4a75;
+}
+
+.invoice-header h3,
+.invoice-buyer strong,
+.invoice-meta p {
+  margin: 0;
 }
 
 .invoice-buyer strong {
