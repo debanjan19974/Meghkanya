@@ -418,6 +418,8 @@ td {
 
 .invoice-note {
   margin-top: 20px;
+  display: flex;
+  justify-content: center;
 }
 
 .invoice-preview {
@@ -427,7 +429,8 @@ td {
   padding: 18px;
   display: grid;
   gap: 20px;
-  max-width: 900px;
+  width: min(100%, 900px);
+  margin: 0 auto;
 }
 
 .invoice-header,
@@ -438,10 +441,12 @@ td {
   justify-content: space-between;
   gap: 20px;
   flex-wrap: wrap;
+  align-items: flex-start;
 }
 
 .invoice-meta {
   min-width: 220px;
+  flex: 0 0 220px;
   text-align: right;
 }
 
@@ -449,6 +454,12 @@ td {
 .invoice-buyer div {
   flex: 1;
   min-width: 240px;
+}
+
+.invoice-header h3,
+.invoice-buyer strong,
+.invoice-meta p {
+  margin: 0;
 }
 
 .invoice-meta p,
