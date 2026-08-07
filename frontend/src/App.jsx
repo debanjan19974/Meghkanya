@@ -42,6 +42,13 @@ export default function App() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [shippingAddress, setShippingAddress] = useState("");
   const [lastInvoice, setLastInvoice] = useState(null);
+  const companyInfo = {
+    name: "Meghkanya Saree Retail Pvt. Ltd.",
+    address: "123 Textile Market, Kolkata, West Bengal",
+    phone: "+91 98765 43210",
+    email: "support@meghkanya.com",
+    gst: "GSTIN: 19ABCDE1234F1Z5"
+  };
   const [message, setMessage] = useState("");
   const barcodeInputRef = useRef(null);
   const billingBarcodeInputRef = useRef(null);
@@ -739,61 +746,164 @@ export default function App() {
             <button onClick={checkoutSale}>Checkout Sale</button>
             {lastInvoice && (
               <div className="invoice-note">
-                <p>
-                  Last Invoice: {lastInvoice.invoice_no} | Amount: Rs {Number(lastInvoice.total_amount).toFixed(2)}
-                </p>
-                <p>Customer: {lastInvoice.customer_name} | {lastInvoice.customer_phone}</p>
-                <p>Shipping: {lastInvoice.shipping_address}</p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const printWindow = window.open("", "_blank");
-                    if (!printWindow) return;
-                    const labelHtml = `<!DOCTYPE html>
-                      <html>
-                        <head>
-                          <meta charset="utf-8" />
-                          <title>Shipment Labels - ${lastInvoice.invoice_no}</title>
-                          <style>
-                            body { font-family: Arial, sans-serif; margin: 16px; }
-                            .print-header { margin-bottom: 16px; }
-                            .label { border: 1px solid #333; padding: 12px; margin-bottom: 16px; }
-                            .label strong { display: block; margin-bottom: 4px; }
-                            .barcode { font-family: monospace; font-size: 14px; margin: 8px 0; }
-                          </style>
-                        </head>
-                        <body>
-                          <div class="print-header">
-                            <h1>Shipment Labels</h1>
-                            <p><strong>Invoice:</strong> ${lastInvoice.invoice_no}</p>
-                            <p><strong>Customer:</strong> ${lastInvoice.customer_name}</p>
-                            <p><strong>Phone:</strong> ${lastInvoice.customer_phone}</p>
-                            <p><strong>Address:</strong> ${lastInvoice.shipping_address}</p>
-                          </div>
-                          ${lastInvoice.items
-                            .map(
-                              (item, index) => `
-                                <div class="label">
-                                  <h2>Item ${index + 1}</h2>
-                                  <strong>Product:</strong> ${item.name}
-                                  <strong>SKU Barcode:</strong> ${item.barcode}
-                                  <div class="barcode">Shipment ID: ${item.shipment_barcode}</div>
-                                  <strong>Quantity:</strong> ${item.quantity}
-                                </div>
-                              `
-                            )
-                            .join("")}
-                        </body>
-                      </html>`;
-                    printWindow.document.write(labelHtml);
-                    printWindow.document.close();
-                    printWindow.focus();
-                    printWindow.print();
-                  }}
-                >
-                  Print Shipment Labels
-                </button>
+              <div className="invoice-preview">
+                <div className="invoice-header">
+                  <div>
+                    <h3>{companyInfo.name}</h3>
+                    <p>{companyInfo.address}</p>
+                    <p>{companyInfo.phone} | {companyInfo.email}</p>
+                    <p>{companyInfo.gst}</p>
+                  </div>
+                  <div className="invoice-meta">
+                    <p><strong>Invoice:</strong> {lastInvoice.invoice_no}</p>
+                    <p><strong>Sale Date:</strong> {new Date(lastInvoice.sold_at).toLocaleString()}</p>
+                    <p><strong>Payment:</strong> {lastInvoice.payment_mode}</p>
+                  </div>
+                </div>
+
+                <div className="invoice-buyer">
+                  <div>
+                    <strong>Bill To</strong>
+                    <p>{lastInvoice.customer_name}</p>
+                    <p>{lastInvoice.customer_phone}</p>
+                    <p>{lastInvoice.shipping_address}</p>
+                  </div>
+                </div>
+
+                <table className="invoice-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Product</th>
+                      <th>Barcode</th>
+                      <th>Price</th>
+                      <th>Qty</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lastInvoice.items.map((item, index) => (
+                      <tr key={item.product_id}>
+                        <td>{index + 1}</td>
+                        <td>{item.name}</td>
+                        <td>{item.barcode}</td>
+                        <td>Rs {Number(item.selling_price).toFixed(2)}</td>
+                        <td>{item.quantity}</td>
+                        <td>Rs {Number(item.line_total).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div className="invoice-summary">
+                  <div>
+                    <p>Subtotal: Rs {Number(lastInvoice.subtotal).toFixed(2)}</p>
+                    <p>Discount: Rs {Number(lastInvoice.discount_amount).toFixed(2)}</p>
+                    <p>GST: Rs {Number(lastInvoice.gst_amount).toFixed(2)}</p>
+                  </div>
+                  <div className="total-box">
+                    <strong>Total Payable</strong>
+                    <strong>Rs {Number(lastInvoice.total_amount).toFixed(2)}</strong>
+                  </div>
+                </div>
+
+                <div className="invoice-signature">
+                  <div>
+                    <p>Authorized Signatory</p>
+                    <div className="signature-box">Digital Signature</div>
+                  </div>
+                </div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const printWindow = window.open("", "_blank");
+                  if (!printWindow) return;
+                  const labelHtml = `<!DOCTYPE html>
+                    <html>
+                      <head>
+                        <meta charset="utf-8" />
+                        <title>Invoice - ${lastInvoice.invoice_no}</title>
+                        <style>
+                          body { font-family: Arial, sans-serif; margin: 24px; color: #1f2937; }
+                          .header, .footer { margin-bottom: 20px; }
+                          .header h1 { margin: 0; font-size: 28px; color: #075985; }
+                          .header p { margin: 4px 0; color: #334155; }
+                          .details, .summary { margin-top: 20px; width: 100%; }
+                          .details td, .summary td { padding: 8px 6px; }
+                          table { width: 100%; border-collapse: collapse; margin-top: 18px; }
+                          th, td { border: 1px solid #cbd5e1; padding: 10px 12px; text-align: left; }
+                          th { background: #eff6ff; }
+                          .total-row td { font-weight: 700; }
+                          .signature-box { margin-top: 30px; padding: 16px; border: 1px dashed #0f172a; width: 260px; text-align: center; color: #0f172a; }
+                        </style>
+                      </head>
+                      <body>
+                        <div class="header">
+                          <h1>${companyInfo.name}</h1>
+                          <p>${companyInfo.address}</p>
+                          <p>${companyInfo.phone} | ${companyInfo.email}</p>
+                          <p>${companyInfo.gst}</p>
+                        </div>
+                        <div class="details">
+                          <table>
+                            <tr><td><strong>Invoice</strong></td><td>${lastInvoice.invoice_no}</td></tr>
+                            <tr><td><strong>Sale Date</strong></td><td>${new Date(lastInvoice.sold_at).toLocaleString()}</td></tr>
+                            <tr><td><strong>Payment</strong></td><td>${lastInvoice.payment_mode}</td></tr>
+                            <tr><td><strong>Customer</strong></td><td>${lastInvoice.customer_name}</td></tr>
+                            <tr><td><strong>Phone</strong></td><td>${lastInvoice.customer_phone}</td></tr>
+                            <tr><td><strong>Address</strong></td><td>${lastInvoice.shipping_address}</td></tr>
+                          </table>
+                        </div>
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>#</th>
+                              <th>Product</th>
+                              <th>Barcode</th>
+                              <th>Price</th>
+                              <th>Qty</th>
+                              <th>Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            ${lastInvoice.items
+                              .map(
+                                (item, index) => `
+                                  <tr>
+                                    <td>${index + 1}</td>
+                                    <td>${item.name}</td>
+                                    <td>${item.barcode}</td>
+                                    <td>Rs ${Number(item.selling_price).toFixed(2)}</td>
+                                    <td>${item.quantity}</td>
+                                    <td>Rs ${Number(item.line_total).toFixed(2)}</td>
+                                  </tr>
+                                `
+                              )
+                              .join("")}
+                          </tbody>
+                        </table>
+                        <div class="summary">
+                          <table>
+                            <tr><td><strong>Subtotal</strong></td><td>Rs ${Number(lastInvoice.subtotal).toFixed(2)}</td></tr>
+                            <tr><td><strong>Discount</strong></td><td>Rs ${Number(lastInvoice.discount_amount).toFixed(2)}</td></tr>
+                            <tr><td><strong>GST</strong></td><td>Rs ${Number(lastInvoice.gst_amount).toFixed(2)}</td></tr>
+                            <tr class="total-row"><td><strong>Total Payable</strong></td><td>Rs ${Number(lastInvoice.total_amount).toFixed(2)}</td></tr>
+                          </table>
+                        </div>
+                        <div class="signature-box">Authorized Signature</div>
+                      </body>
+                    </html>`;
+                  printWindow.document.write(labelHtml);
+                  printWindow.document.close();
+                  printWindow.focus();
+                  printWindow.print();
+                }}
+              >
+                Print Invoice
+              </button>
+            </div>
             )}
           </div>
         </section>

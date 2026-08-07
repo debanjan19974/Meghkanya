@@ -417,7 +417,101 @@ td {
 }
 
 .invoice-note {
-  color: #065f46;
+  margin-top: 20px;
+}
+
+.invoice-preview {
+  background: #ffffff;
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  border-radius: 16px;
+  padding: 18px;
+  display: grid;
+  gap: 20px;
+}
+
+.invoice-header,
+.invoice-buyer,
+.invoice-summary,
+.invoice-signature {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.invoice-header div,
+.invoice-buyer div {
+  flex: 1;
+}
+
+.invoice-meta p,
+.invoice-buyer p,
+.invoice-summary p {
+  margin: 4px 0;
+  color: #0f4a75;
+}
+
+.invoice-buyer strong {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.invoice-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.invoice-table th,
+.invoice-table td {
+  padding: 12px 14px;
+  border: 1px solid rgba(59, 130, 246, 0.24);
+}
+
+.invoice-table thead {
+  background: rgba(59, 130, 246, 0.14);
+}
+
+.invoice-summary {
+  align-items: flex-end;
+}
+
+.invoice-summary > div {
+  display: grid;
+  gap: 8px;
+}
+
+.total-box {
+  background: #eff6ff;
+  border-radius: 12px;
+  padding: 14px;
+  text-align: right;
+}
+
+.invoice-signature {
+  align-items: center;
+}
+
+.signature-box {
+  min-width: 240px;
+  min-height: 66px;
+  border: 1px dashed #0f172a;
+  padding: 16px;
+  border-radius: 12px;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .invoice-header,
+  .invoice-buyer,
+  .invoice-summary,
+  .invoice-signature {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 @media (max-width: 720px) {

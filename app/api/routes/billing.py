@@ -91,6 +91,8 @@ def create_sale(
                 "name": product.name,
                 "barcode": product.barcode,
                 "quantity": quantity,
+                "selling_price": product.sell_price,
+                "line_total": line_total,
                 "shipment_barcode": shipment_barcode,
             }
         )
@@ -100,9 +102,14 @@ def create_sale(
     return SaleResponse(
         sale_id=sale.id,
         invoice_no=sale.invoice_no,
+        payment_mode=sale.payment_mode,
+        subtotal=sale.subtotal,
+        discount_amount=sale.discount_amount,
+        gst_amount=sale.gst_amount,
         total_amount=total_amount,
         customer_name=sale.customer_name,
         customer_phone=sale.customer_phone,
         shipping_address=sale.shipping_address,
+        sold_at=sale.sold_at,
         items=label_items,
     )
