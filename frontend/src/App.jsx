@@ -747,10 +747,11 @@ export default function App() {
               <div className="invoice-note">
               <div className="invoice-preview">
                 <div className="invoice-header">
-                  <div>
-                    <h3>{companyInfo.name}</h3>
-                    <p>{companyInfo.address}</p>
-                    <p>{companyInfo.phone} | {companyInfo.email}</p>
+                  <div className="shipping-block">
+                    <strong>Shipping Address</strong>
+                    <p>{lastInvoice.shipping_address}</p>
+                    <p>{lastInvoice.customer_name}</p>
+                    <p>{lastInvoice.customer_phone}</p>
                   </div>
                   <div className="invoice-meta">
                     <p><strong>Invoice:</strong> {lastInvoice.invoice_no}</p>
@@ -764,7 +765,6 @@ export default function App() {
                     <strong>Bill To</strong>
                     <p>{lastInvoice.customer_name}</p>
                     <p>{lastInvoice.customer_phone}</p>
-                    <p>{lastInvoice.shipping_address}</p>
                   </div>
                 </div>
 
@@ -804,8 +804,13 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="invoice-signature">
-                  <div>
+                <div className="invoice-footer">
+                  <div className="company-info">
+                    <h4>{companyInfo.name}</h4>
+                    <p>{companyInfo.address}</p>
+                    <p>{companyInfo.phone} | {companyInfo.email}</p>
+                  </div>
+                  <div className="invoice-signature">
                     <p>Authorized Signatory</p>
                     <div className="signature-box">Meghkanya</div>
                   </div>
@@ -837,19 +842,25 @@ export default function App() {
                         </style>
                       </head>
                       <body>
-                        <div class="header">
-                          <h1>${companyInfo.name}</h1>
-                          <p>${companyInfo.address}</p>
-                          <p>${companyInfo.phone} | ${companyInfo.email}</p>
+                        <div class="header-grid">
+                          <div class="header-left">
+                            <strong>Shipping Address</strong>
+                            <p>${lastInvoice.shipping_address}</p>
+                            <p>${lastInvoice.customer_name}</p>
+                            <p>${lastInvoice.customer_phone}</p>
+                          </div>
+                          <div class="header-right">
+                            <table>
+                              <tr><td><strong>Invoice</strong></td><td>${lastInvoice.invoice_no}</td></tr>
+                              <tr><td><strong>Sale Date</strong></td><td>${new Date(lastInvoice.sold_at).toLocaleString()}</td></tr>
+                              <tr><td><strong>Payment</strong></td><td>${lastInvoice.payment_mode}</td></tr>
+                            </table>
+                          </div>
                         </div>
                         <div class="details">
                           <table>
-                            <tr><td><strong>Invoice</strong></td><td>${lastInvoice.invoice_no}</td></tr>
-                            <tr><td><strong>Sale Date</strong></td><td>${new Date(lastInvoice.sold_at).toLocaleString()}</td></tr>
-                            <tr><td><strong>Payment</strong></td><td>${lastInvoice.payment_mode}</td></tr>
-                            <tr><td><strong>Customer</strong></td><td>${lastInvoice.customer_name}</td></tr>
+                            <tr><td><strong>Bill To</strong></td><td>${lastInvoice.customer_name}</td></tr>
                             <tr><td><strong>Phone</strong></td><td>${lastInvoice.customer_phone}</td></tr>
-                            <tr><td><strong>Address</strong></td><td>${lastInvoice.shipping_address}</td></tr>
                           </table>
                         </div>
                         <table>
@@ -887,7 +898,16 @@ export default function App() {
                             <tr class="total-row"><td><strong>Total Payable</strong></td><td>Rs ${Number(lastInvoice.total_amount).toFixed(2)}</td></tr>
                           </table>
                         </div>
-                        <div class="signature-box">Authorized Signature</div>
+                        <div class="footer-grid">
+                          <div class="footer-left">
+                            <h2>${companyInfo.name}</h2>
+                            <p>${companyInfo.address}</p>
+                            <p>${companyInfo.phone} | ${companyInfo.email}</p>
+                          </div>
+                          <div class="footer-right">
+                            <div class="signature-box">Authorized Signature</div>
+                          </div>
+                        </div>
                       </body>
                     </html>`;
                   printWindow.document.write(labelHtml);

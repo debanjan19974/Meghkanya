@@ -467,16 +467,60 @@ td {
   text-align: right;
 }
 
-.invoice-header div,
-.invoice-buyer div {
-  flex: 1;
-  min-width: 240px;
+.invoice-header {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) auto;
+  gap: 20px;
+}
+
+.invoice-header .shipping-block {
+  display: grid;
+  gap: 6px;
+}
+
+.invoice-header .shipping-block strong {
+  font-size: 1rem;
+  margin-bottom: 8px;
 }
 
 .invoice-header h3,
 .invoice-buyer strong,
 .invoice-meta p {
   margin: 0;
+}
+
+.invoice-buyer {
+  display: grid;
+  gap: 8px;
+}
+
+.invoice-footer {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: end;
+}
+
+.company-info h4,
+.invoice-footer p {
+  margin: 0;
+}
+
+.invoice-footer .company-info {
+  display: grid;
+  gap: 6px;
+}
+
+.invoice-summary {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: end;
+}
+
+.invoice-summary > div {
+  display: grid;
+  gap: 8px;
 }
 
 .invoice-meta p,
@@ -550,9 +594,11 @@ td {
   .invoice-header,
   .invoice-buyer,
   .invoice-summary,
-  .invoice-signature {
-    flex-direction: column;
-    align-items: stretch;
+  .invoice-footer {
+    grid-template-columns: 1fr !important;
+  }
+  .invoice-meta {
+    text-align: left;
   }
 }
 
