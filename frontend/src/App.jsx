@@ -305,8 +305,8 @@ export default function App() {
   if (!token) {
     return (
       <div className="auth-page">
-        <img className="auth-logo" src="/logo/maghkanyalogo.jpeg" alt="Meghkanya" />
         <section className="auth-card">
+          <img className="auth-logo" src="/logo/maghkanyalogo.jpeg" alt="Meghkanya" />
           <div className="brand-block">
             <p className="eyebrow">Inventory and Billing</p>
             <h1>Meghkanya</h1>
@@ -748,10 +748,9 @@ export default function App() {
               <div className="invoice-preview">
                 <div className="invoice-header">
                   <div className="shipping-block">
-                    <img className="invoice-logo" src="/logo/4.jpeg" alt="Meghkanya logo" />
                     <strong>Shipping Address</strong>
-                    <p>{lastInvoice.shipping_address}</p>
                     <p>{lastInvoice.customer_name}</p>
+                    <p>{lastInvoice.shipping_address}</p>
                     <p>{lastInvoice.customer_phone}</p>
                   </div>
                   <div className="invoice-meta">
@@ -774,7 +773,6 @@ export default function App() {
                     <tr>
                       <th>#</th>
                       <th>Product</th>
-                      <th>Barcode</th>
                       <th>Price</th>
                       <th>Qty</th>
                       <th>Total</th>
@@ -785,7 +783,6 @@ export default function App() {
                       <tr key={item.product_id}>
                         <td>{index + 1}</td>
                         <td>{item.name}</td>
-                        <td>{item.barcode}</td>
                         <td>Rs {Number(item.selling_price).toFixed(2)}</td>
                         <td>{item.quantity}</td>
                         <td>Rs {Number(item.line_total).toFixed(2)}</td>
@@ -809,7 +806,8 @@ export default function App() {
                   <div className="company-info">
                     <h4>{companyInfo.name}</h4>
                     <p>{companyInfo.address}</p>
-                    <p>{companyInfo.phone} | {companyInfo.email}</p>
+                    <p>WhatsApp: {companyInfo.phone}</p>
+                    <p>Email: {companyInfo.email}</p>
                   </div>
                   <div className="invoice-signature">
                     <p>Authorized Signatory</p>
@@ -848,8 +846,8 @@ export default function App() {
                         <div class="header-grid">
                           <div class="header-left">
                             <strong>Shipping Address</strong>
-                            <p>${lastInvoice.shipping_address}</p>
                             <p>${lastInvoice.customer_name}</p>
+                            <p>${lastInvoice.shipping_address}</p>
                             <p>${lastInvoice.customer_phone}</p>
                           </div>
                           <div class="header-right">
@@ -871,7 +869,6 @@ export default function App() {
                             <tr>
                               <th>#</th>
                               <th>Product</th>
-                              <th>Barcode</th>
                               <th>Price</th>
                               <th>Qty</th>
                               <th>Total</th>
@@ -884,7 +881,6 @@ export default function App() {
                                   <tr>
                                     <td>${index + 1}</td>
                                     <td>${item.name}</td>
-                                    <td>${item.barcode}</td>
                                     <td>Rs ${Number(item.selling_price).toFixed(2)}</td>
                                     <td>${item.quantity}</td>
                                     <td>Rs ${Number(item.line_total).toFixed(2)}</td>
@@ -905,10 +901,13 @@ export default function App() {
                           <div class="footer-left">
                             <h2>${companyInfo.name}</h2>
                             <p>${companyInfo.address}</p>
-                            <p>${companyInfo.phone} | ${companyInfo.email}</p>
+                            <p>WhatsApp: ${companyInfo.phone}</p>
+                            <p>Email: ${companyInfo.email}</p>
                           </div>
                           <div class="footer-right">
-                            <div class="signature-box">Authorized Signature</div>
+                            <div class="signature-box">
+                              <img src="/logo/Signeture.png" alt="Authorized signature" style="max-width: 100%; height: auto;" />
+                            </div>
                           </div>
                         </div>
                       </body>

@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     app_env: str = "development"
     secret_key: str = "change-this-in-production"
     access_token_expire_minutes: int = 480
-    database_url: str = "postgresql+psycopg2://postgres:postgres@localhost:5432/saree_retail"
+    database_url: str = "    psql -h localhost -p 5432 -U postgres -d saree_retail"
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     bootstrap_admin_enabled: bool = True
     bootstrap_admin_username: str = "admin"
