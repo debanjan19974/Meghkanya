@@ -48,3 +48,5 @@ yarn-error.log*
 
 # SQLite
 *.sqlite3
+
+saree_retail_backup.dump
