@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { adjustStock, createProduct, createSale, listProducts, login, resetPassword } from "./api";
+import { adjustStock, createProduct, createSale, listProducts, login, resetPassword, updateProduct } from "./api";
 
 const defaultProduct = {
   barcode: "",
@@ -8,6 +8,17 @@ const defaultProduct = {
   buy_price: "",
   sell_price: "",
   stock_quantity: 0
+};
+
+const defaultEditProduct = {
+  id: null,
+  barcode: "",
+  name: "",
+  category: "",
+  buy_price: "",
+  sell_price: "",
+  stock_quantity: 0,
+  is_active: true
 };
 
 export default function App() {
@@ -32,6 +43,7 @@ export default function App() {
   const [barcode, setBarcode] = useState("");
   const [scanResult, setScanResult] = useState(null);
   const [productForm, setProductForm] = useState(defaultProduct);
+  const [editProduct, setEditProduct] = useState(defaultEditProduct);
   const [stockChange, setStockChange] = useState("1");
   const [billBarcode, setBillBarcode] = useState("");
   const [cart, setCart] = useState([]);
@@ -149,6 +161,49 @@ export default function App() {
     } catch (err) {
       setMessage(err?.message || "Product create failed.");
     }
+  }
+
+  function handleEditClick(product) {
+    setEditProduct({
+      id: product.id,
+      barcode: product.barcode,
+      name: product.name || "",
+      category: product.category || "",
+      buy_price: product.buy_price || "",
+      sell_price: product.sell_price || "",
+      stock_quantity: product.stock_quantity || 0,
+      is_active: product.is_active ?? true
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function handleEditFieldChange(field, value) {
+    setEditProduct((prev) => ({ ...prev, [field]: value }));
+  }
+
+  async function handleUpdateProduct(e) {
+    e.preventDefault();
+    if (!editProduct.id) return;
+    setMessage("");
+    try {
+      await updateProduct(token, editProduct.id, {
+        name: editProduct.name,
+        category: editProduct.category,
+        buy_price: Number(editProduct.buy_price),
+        sell_price: Number(editProduct.sell_price),
+        stock_quantity: Number(editProduct.stock_quantity),
+        is_active: editProduct.is_active
+      });
+      setEditProduct(defaultEditProduct);
+      await loadProducts();
+      setMessage("Product updated successfully.");
+    } catch (err) {
+      setMessage(err?.message || "Product update failed.");
+    }
+  }
+
+  function cancelEdit() {
+    setEditProduct(defaultEditProduct);
   }
 
   async function handleBarcodeSearch(code) {
@@ -582,6 +637,69 @@ export default function App() {
               />
               <button type="submit">Save Product</button>
             </form>
+
+            {editProduct.id && (
+              <div className="edit-card card">
+                <div className="section-headline">
+                  <div>
+                    <h2>Edit Product</h2>
+                    <p className="help-text">Update product details. SKU is fixed and cannot be changed.</p>
+                  </div>
+                </div>
+                <form className="grid product-form" onSubmit={handleUpdateProduct}>
+                  <input disabled placeholder="Barcode (SKU)" value={editProduct.barcode} />
+                  <input
+                    required
+                    placeholder="Name"
+                    value={editProduct.name}
+                    onChange={(e) => handleEditFieldChange("name", e.target.value)}
+                  />
+                  <input
+                    placeholder="Category"
+                    value={editProduct.category}
+                    onChange={(e) => handleEditFieldChange("category", e.target.value)}
+                  />
+                  <input
+                    required
+                    type="number"
+                    step="0.01"
+                    placeholder="Buy Price"
+                    value={editProduct.buy_price}
+                    onChange={(e) => handleEditFieldChange("buy_price", e.target.value)}
+                  />
+                  <input
+                    required
+                    type="number"
+                    step="0.01"
+                    placeholder="Sell Price"
+                    value={editProduct.sell_price}
+                    onChange={(e) => handleEditFieldChange("sell_price", e.target.value)}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Stock Quantity"
+                    value={editProduct.stock_quantity}
+                    onChange={(e) => handleEditFieldChange("stock_quantity", e.target.value)}
+                  />
+                  <div className="checkbox-row">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={editProduct.is_active}
+                        onChange={(e) => handleEditFieldChange("is_active", e.target.checked)}
+                      />
+                      Active
+                    </label>
+                  </div>
+                  <div className="button-row">
+                    <button type="submit">Save Changes</button>
+                    <button type="button" className="secondary-button" onClick={cancelEdit}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
           </section>
 
           <section className="card">
@@ -600,6 +718,7 @@ export default function App() {
                     <th>Category</th>
                     <th>Price</th>
                     <th>Stock</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -610,6 +729,11 @@ export default function App() {
                       <td>{item.category || "—"}</td>
                       <td>Rs {Number(item.sell_price).toFixed(2)}</td>
                       <td>{item.stock_quantity}</td>
+                      <td>
+                        <button type="button" onClick={() => handleEditClick(item)}>
+                          Edit
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   {!products.length && (
