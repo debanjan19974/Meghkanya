@@ -156,3 +156,16 @@ export async function getCustomersAnalysis(token) {
   if (!res.ok) throw new Error(await readErrorMessage(res, "Failed to fetch customer analysis"));
   return res.json();
 }
+
+export async function updateCustomer(token, originalPhone, payload) {
+  const res = await fetch(`${API_BASE}/analytics/customers/${encodeURIComponent(originalPhone)}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(await readErrorMessage(res, "Customer update failed"));
+  return res.json();
+}

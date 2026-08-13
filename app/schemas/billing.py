@@ -19,6 +19,11 @@ class SaleCreateRequest(BaseModel):
     items: list[SaleItemCreate]
 
 
+class CustomerUpdateRequest(BaseModel):
+    customer_name: str
+    customer_phone: str
+
+
 class SaleLabelItem(BaseModel):
     product_id: int
     name: str

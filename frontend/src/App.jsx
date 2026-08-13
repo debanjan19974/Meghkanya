@@ -11,12 +11,13 @@ import {
   getSalesAnalysis,
   getDashboardAnalysis,
   getCustomersAnalysis,
+  updateCustomer,
 } from "./api";
 
 const defaultProduct = {
   barcode: "",
   name: "",
-  category: "",
+  category: "Saree",
   buy_price: "",
   sell_price: "",
   stock_quantity: 0
@@ -31,6 +32,14 @@ const defaultEditProduct = {
   sell_price: "",
   stock_quantity: 0,
   is_active: true
+};
+
+const productCategories = ["Saree", "Blouse"];
+
+const defaultEditCustomer = {
+  originalPhone: "",
+  name: "",
+  phone: ""
 };
 
 function CopyIcon() {
@@ -128,6 +137,7 @@ export default function App() {
   const [scanResult, setScanResult] = useState(null);
   const [productForm, setProductForm] = useState(defaultProduct);
   const [editProduct, setEditProduct] = useState(defaultEditProduct);
+  const [editCustomer, setEditCustomer] = useState(defaultEditCustomer);
   const [stockChange, setStockChange] = useState("1");
   const [billBarcode, setBillBarcode] = useState("");
   const [cart, setCart] = useState([]);
@@ -282,7 +292,39 @@ export default function App() {
   }
 
   function handleEditCustomer(customer) {
-    setMessage(`Edit customer: ${customer.name} (${customer.phone})`);
+    setEditCustomer({
+      originalPhone: customer.phone,
+      name: customer.name,
+      phone: customer.phone
+    });
+    setMessage("");
+  }
+
+  async function handleUpdateCustomer(e) {
+    e.preventDefault();
+    const name = editCustomer.name.trim();
+    const phone = editCustomer.phone.trim();
+
+    if (!name || !phone) {
+      setMessage("Customer name and mobile number are required.");
+      return;
+    }
+
+    try {
+      const result = await updateCustomer(token, editCustomer.originalPhone, {
+        customer_name: name,
+        customer_phone: phone
+      });
+      setEditCustomer(defaultEditCustomer);
+      await loadAnalytics();
+      setMessage(result.message || "Customer details updated.");
+    } catch (err) {
+      setMessage(err?.message || "Customer update failed.");
+    }
+  }
+
+  function cancelCustomerEdit() {
+    setEditCustomer(defaultEditCustomer);
   }
 
   function handleLogout() {
@@ -780,11 +822,17 @@ export default function App() {
                 value={productForm.name}
                 onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
               />
-              <input
-                placeholder="Category"
+              <select
+                required
+                aria-label="Product category"
                 value={productForm.category}
                 onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
-              />
+              >
+                <option value="" disabled>Select category</option>
+                {productCategories.map((category) => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
               <input
                 required
                 type="number"
@@ -828,11 +876,20 @@ export default function App() {
                     value={editProduct.name}
                     onChange={(e) => handleEditFieldChange("name", e.target.value)}
                   />
-                  <input
-                    placeholder="Category"
+                  <select
+                    required
+                    aria-label="Product category"
                     value={editProduct.category}
                     onChange={(e) => handleEditFieldChange("category", e.target.value)}
-                  />
+                  >
+                    <option value="" disabled>Select category</option>
+                    {!productCategories.includes(editProduct.category) && editProduct.category && (
+                      <option value={editProduct.category}>{editProduct.category}</option>
+                    )}
+                    {productCategories.map((category) => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
                   <input
                     required
                     type="number"
@@ -1588,12 +1645,44 @@ export default function App() {
           </div>
 
           <h3 style={{marginTop: "30px"}}>Customer List</h3>
+          {editCustomer.originalPhone && (
+            <div className="edit-card customer-edit-card">
+              <div className="section-headline">
+                <div>
+                  <h3>Edit Customer Details</h3>
+                  <p className="help-text">Correct the name or mobile number on this customer's saved invoices.</p>
+                </div>
+              </div>
+              <form className="grid product-form" onSubmit={handleUpdateCustomer}>
+                <input
+                  required
+                  placeholder="Customer name"
+                  value={editCustomer.name}
+                  onChange={(e) => setEditCustomer((current) => ({ ...current, name: e.target.value }))}
+                />
+                <input
+                  required
+                  type="tel"
+                  placeholder="Mobile number"
+                  value={editCustomer.phone}
+                  onChange={(e) => setEditCustomer((current) => ({ ...current, phone: e.target.value }))}
+                />
+                <div className="button-row">
+                  <button type="submit">Save Changes</button>
+                  <button type="button" className="secondary-button" onClick={cancelCustomerEdit}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
           {customersAnalysis && customersAnalysis.customers.length > 0 ? (
             <table>
               <thead>
                 <tr>
                   <th>Customer Name</th>
                   <th>Mobile Number</th>
+                  <th>Actions</th>
                   <th>Purchase Count</th>
                   <th>Total Spent</th>
                   <th>Average Purchase</th>
@@ -1620,6 +1709,9 @@ export default function App() {
                           >
                             {isCopied ? <CheckIcon /> : <CopyIcon />}
                           </button>
+                        </span>
+                      </td>
+                      <td>
                           <button
                             type="button"
                             className="secondary-button inline-edit-button"
@@ -1629,7 +1721,6 @@ export default function App() {
                           >
                             <EditIcon />
                           </button>
-                        </span>
                       </td>
                       <td>{customer.purchase_count}</td>
                       <td><strong>Rs {customer.total_spent.toFixed(2)}</strong></td>
