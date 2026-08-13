@@ -278,7 +278,7 @@ textarea {
 
 .workspace-tabs {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   margin-top: 18px;
   padding: 6px;
@@ -373,6 +373,63 @@ button:disabled {
 table {
   width: 100%;
   border-collapse: collapse;
+}
+
+.customer-phone-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 30px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.inline-copy-button,
+.inline-edit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+  border-radius: 6px;
+  background: #dfeefa;
+  color: #0f4a75;
+  border: 1px solid rgba(59, 130, 246, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.12);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.inline-copy-button svg,
+.inline-edit-button svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.inline-copy-button:hover,
+.inline-edit-button:hover {
+  background: #d6ebff;
+  transform: none;
+}
+
+.inline-copy-button.copied {
+  background: #eaf6ff;
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.18);
+  color: #0f172a;
+}
+
+.inline-edit-button {
+  background: #edf6ff;
+  border-color: rgba(14, 116, 144, 0.2);
+  color: #0f4a75;
 }
 
 th,
@@ -543,6 +600,188 @@ td {
 .invoice-table td {
   padding: 12px 14px;
   border: 1px solid rgba(59, 130, 246, 0.24);
+}
+
+/* Analytics Dashboard Styles */
+.analytics-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 18px;
+  padding: 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.analytics-tabs button {
+  min-height: 44px;
+  background: transparent;
+  color: #374151;
+  border-color: transparent;
+  font-weight: 700;
+  border-radius: 6px;
+  transition: all 200ms ease;
+}
+
+.analytics-tabs button.active {
+  background: #111827;
+  color: #fff;
+  border-color: #111827;
+  box-shadow: 0 8px 22px rgba(17, 24, 39, 0.12);
+}
+
+.analytics-tabs button:hover {
+  background: rgba(17, 24, 39, 0.08);
+  transform: none;
+}
+
+.analytics-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.analytics-card {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(14, 116, 144, 0.06);
+}
+
+.analytics-card span {
+  display: block;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.analytics-card strong {
+  display: block;
+  font-size: 1.5rem;
+  color: #075985;
+  font-weight: 700;
+}
+
+.card table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+.card table thead {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.card table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #0f4a75;
+  border-bottom: 2px solid rgba(59, 130, 246, 0.2);
+}
+
+.card table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.12);
+  color: #374151;
+}
+
+.card table tbody tr:hover {
+  background: rgba(59, 130, 246, 0.04);
+}
+
+.card h3 {
+  color: #0f4a75;
+  font-size: 1.1rem;
+  margin: 20px 0 12px 0;
+}
+
+.chart-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 18px 0 12px;
+}
+
+.chart-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #0f4a75;
+}
+
+.chart-toolbar select {
+  min-width: 120px;
+  padding: 8px 10px;
+}
+
+.chart-panel {
+  width: 100%;
+  overflow-x: auto;
+  margin: 12px 0 8px;
+}
+
+.trend-chart {
+  width: 100%;
+  min-height: 220px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(219, 234, 254, 0.28), rgba(255, 255, 255, 0.3));
+}
+
+.chart-card {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 12px;
+  padding: 18px;
+  margin-top: 18px;
+}
+
+.chart-header-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.chart-header-row h3 {
+  margin: 0;
+}
+
+.chart-header-row p {
+  margin: 6px 0 0;
+  color: #475569;
+}
+
+.chart-header-row strong {
+  color: #1d4ed8;
+  font-size: 1.15rem;
+}
+
+.analytics-card small {
+  display: block;
+  margin-top: 8px;
+  color: #475569;
+  font-size: 0.8rem;
+}
+
+.detail-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.detail-panel {
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 12px;
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  padding: 16px;
 }
 
 .invoice-table thead {

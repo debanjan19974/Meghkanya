@@ -101,3 +101,58 @@ export async function createSale(token, payload) {
   if (!res.ok) throw new Error(await readErrorMessage(res, "Sale creation failed"));
   return res.json();
 }
+
+export async function getMonthlySales(token) {
+  const res = await fetch(`${API_BASE}/billing/sales/monthly/current`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  if (!res.ok) throw new Error(await readErrorMessage(res, "Failed to fetch monthly sales"));
+  return res.json();
+}
+
+export async function getStockAnalysis(token) {
+  const res = await fetch(`${API_BASE}/analytics/stock`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  if (!res.ok) throw new Error(await readErrorMessage(res, "Failed to fetch stock analysis"));
+  return res.json();
+}
+
+export async function getSalesAnalysis(token) {
+  const res = await fetch(`${API_BASE}/analytics/sales`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  if (!res.ok) throw new Error(await readErrorMessage(res, "Failed to fetch sales analysis"));
+  return res.json();
+}
+
+export async function getDashboardAnalysis(token, period = "month") {
+  const res = await fetch(`${API_BASE}/analytics/dashboard?period=${encodeURIComponent(period)}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  if (!res.ok) throw new Error(await readErrorMessage(res, "Failed to fetch dashboard analysis"));
+  return res.json();
+}
+
+export async function getCustomersAnalysis(token) {
+  const res = await fetch(`${API_BASE}/analytics/customers`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  if (!res.ok) throw new Error(await readErrorMessage(res, "Failed to fetch customer analysis"));
+  return res.json();
+}

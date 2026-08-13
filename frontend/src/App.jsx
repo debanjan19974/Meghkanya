@@ -1,5 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { adjustStock, createProduct, createSale, listProducts, login, resetPassword, updateProduct } from "./api";
+import {
+  adjustStock,
+  createProduct,
+  createSale,
+  listProducts,
+  login,
+  resetPassword,
+  updateProduct,
+  getStockAnalysis,
+  getSalesAnalysis,
+  getDashboardAnalysis,
+  getCustomersAnalysis,
+} from "./api";
 
 const defaultProduct = {
   barcode: "",
@@ -21,6 +33,72 @@ const defaultEditProduct = {
   is_active: true
 };
 
+function CopyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M9 8.25A2.25 2.25 0 0 1 11.25 6h6.5A2.25 2.25 0 0 1 20 8.25v7.5A2.25 2.25 0 0 1 17.75 18h-6.5A2.25 2.25 0 0 1 9 15.75v-7.5Zm1.5 0v7.5c0 .41.34.75.75.75h6.5c.41 0 .75-.34.75-.75v-7.5a.75.75 0 0 0-.75-.75h-6.5a.75.75 0 0 0-.75.75ZM7 10.5A2.5 2.5 0 0 1 9.5 8h.9V6.75h-.9A3.75 3.75 0 0 0 5.75 10.5v6.75A3.75 3.75 0 0 0 9.5 21h6.75v-1.25H9.5A2.5 2.5 0 0 1 7 17.25V10.5Z" fill="currentColor"/>
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M9.85 15.7 6.2 12.05l-1.06 1.06 4.71 4.71 9.2-9.2-1.06-1.06-8.14 8.14Z" fill="currentColor"/>
+    </svg>
+  );
+}
+
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25Zm14.71-9.04a1 1 0 0 0 0-1.42l-2.33-2.33a1 1 0 0 0-1.42 0l-1.2 1.2 3.75 3.75 1.2-1.2Z" fill="currentColor"/>
+    </svg>
+  );
+}
+
+function SalesTrendChart({ points }) {
+  if (!points || !points.length) {
+    return <div className="empty-state">No chart data available.</div>;
+  }
+
+  const width = 760;
+  const height = 230;
+  const padding = 26;
+  const maxValue = Math.max(...points.map((point) => point.value), 1);
+  const chartWidth = width - padding * 2;
+  const chartHeight = height - padding * 2;
+
+  const path = points
+    .map((point, index) => {
+      const x = padding + (chartWidth / Math.max(points.length - 1, 1)) * index;
+      const y = height - padding - (point.value / maxValue) * chartHeight;
+      return `${index === 0 ? "M" : "L"}${x} ${y}`;
+    })
+    .join(" ");
+
+  const areaPath = `${path} L ${padding + chartWidth} ${height - padding} L ${padding} ${height - padding} Z`;
+
+  return (
+    <div className="chart-panel">
+      <svg viewBox={`0 0 ${width} ${height}`} className="trend-chart" role="img" aria-label="Sales trend chart">
+        <path d={areaPath} fill="rgba(59, 130, 246, 0.18)" />
+        <path d={path} fill="none" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" />
+        {points.map((point, index) => {
+          const x = padding + (chartWidth / Math.max(points.length - 1, 1)) * index;
+          const y = height - padding - (point.value / maxValue) * chartHeight;
+          return (
+            <g key={`${point.label}-${index}`}>
+              <circle cx={x} cy={y} r="4" fill="#0f4a75" />
+              <text x={x} y={height - 8} fontSize="10" textAnchor="middle" fill="#475569">{point.label}</text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
 export default function App() {
   const [token, setToken] = useState(() => localStorage.getItem("meghkanya_token") || "");
   const [authMode, setAuthMode] = useState("login");
@@ -40,6 +118,12 @@ export default function App() {
   );
   const [activeWorkspace, setActiveWorkspace] = useState("products");
   const [products, setProducts] = useState([]);
+  const [analyticsTab, setAnalyticsTab] = useState("stock");
+  const [stockAnalysis, setStockAnalysis] = useState(null);
+  const [salesAnalysis, setSalesAnalysis] = useState(null);
+  const [dashboardAnalysis, setDashboardAnalysis] = useState(null);
+  const [customersAnalysis, setCustomersAnalysis] = useState(null);
+  const [dashboardFilter, setDashboardFilter] = useState("month");
   const [barcode, setBarcode] = useState("");
   const [scanResult, setScanResult] = useState(null);
   const [productForm, setProductForm] = useState(defaultProduct);
@@ -61,6 +145,7 @@ export default function App() {
     email: "Meghkanya.official@gmail.com"
   };
   const [message, setMessage] = useState("");
+  const [copiedPhoneKey, setCopiedPhoneKey] = useState("");
   const barcodeInputRef = useRef(null);
   const billingBarcodeInputRef = useRef(null);
 
@@ -73,12 +158,31 @@ export default function App() {
       setProducts([]);
       setScanResult(null);
       setCart([]);
+      setStockAnalysis(null);
+      setSalesAnalysis(null);
+      setDashboardAnalysis(null);
+      setCustomersAnalysis(null);
       return;
     }
 
     localStorage.setItem("meghkanya_token", token);
     loadProducts();
+    loadAnalytics();
   }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const refreshTimer = setInterval(() => {
+      loadProducts();
+      loadAnalytics();
+      if (activeWorkspace === "analytics") {
+        loadDashboardAnalytics(dashboardFilter);
+      }
+    }, 15000);
+
+    return () => clearInterval(refreshTimer);
+  }, [token, activeWorkspace, dashboardFilter]);
 
   async function loadProducts() {
     try {
@@ -91,6 +195,35 @@ export default function App() {
         return;
       }
       setMessage(err?.message || "Could not load products.");
+    }
+  }
+
+  async function loadAnalytics() {
+    try {
+      const [stock, sales, customers] = await Promise.all([
+        getStockAnalysis(token),
+        getSalesAnalysis(token),
+        getCustomersAnalysis(token)
+      ]);
+      setStockAnalysis(stock);
+      setSalesAnalysis(sales);
+      setCustomersAnalysis(customers);
+      if (activeWorkspace === "analytics") {
+        const dashboard = await getDashboardAnalysis(token, dashboardFilter);
+        setDashboardAnalysis(dashboard);
+      }
+    } catch (err) {
+      console.error("Failed to load analytics:", err?.message);
+    }
+  }
+
+  async function loadDashboardAnalytics(nextFilter = dashboardFilter) {
+    if (!token) return;
+    try {
+      const data = await getDashboardAnalysis(token, nextFilter);
+      setDashboardAnalysis(data);
+    } catch (err) {
+      console.error("Failed to load dashboard analytics:", err?.message);
     }
   }
 
@@ -135,6 +268,21 @@ export default function App() {
     } finally {
       setAuthLoading(false);
     }
+  }
+
+  async function handleCopyPhone(phone, rowKey) {
+    if (!phone) return;
+    try {
+      await navigator.clipboard.writeText(phone);
+      setCopiedPhoneKey(rowKey);
+      window.setTimeout(() => setCopiedPhoneKey((current) => (current === rowKey ? "" : current)), 1200);
+    } catch (err) {
+      setMessage("Could not copy phone number.");
+    }
+  }
+
+  function handleEditCustomer(customer) {
+    setMessage(`Edit customer: ${customer.name} (${customer.phone})`);
   }
 
   function handleLogout() {
@@ -330,6 +478,10 @@ export default function App() {
       setShippingAddress("");
       setMessage(`Sale completed. Invoice ${result.invoice_no}`);
       await loadProducts();
+      await loadAnalytics();
+      if (activeWorkspace === "analytics") {
+        await loadDashboardAnalytics(dashboardFilter);
+      }
       billingBarcodeInputRef.current?.focus();
     } catch (err) {
       setMessage(err?.message || "Checkout failed. Please verify stock and totals.");
@@ -340,7 +492,15 @@ export default function App() {
     () => products.filter((item) => Number(item.stock_quantity) <= 5).length,
     [products]
   );
-  const totalStockValue = useMemo(
+  const totalBuyingPrice = useMemo(
+    () =>
+      products.reduce(
+        (sum, item) => sum + Number(item.buy_price || 0) * Number(item.stock_quantity || 0),
+        0
+      ),
+    [products]
+  );
+  const totalSellingPrice = useMemo(
     () =>
       products.reduce(
         (sum, item) => sum + Number(item.sell_price || 0) * Number(item.stock_quantity || 0),
@@ -505,12 +665,12 @@ export default function App() {
           <strong>{lowStockCount}</strong>
         </div>
         <div className="summary-card">
-          <span>Stock Value</span>
-          <strong>Rs {totalStockValue.toFixed(2)}</strong>
+          <span>Buying Price</span>
+          <strong>Rs {totalBuyingPrice.toFixed(2)}</strong>
         </div>
         <div className="summary-card">
-          <span>Current Cart</span>
-          <strong>{cart.length} items</strong>
+          <span>Selling Price</span>
+          <strong>Rs {totalSellingPrice.toFixed(2)}</strong>
         </div>
       </div>
 
@@ -530,6 +690,20 @@ export default function App() {
           onClick={() => setActiveWorkspace("billing")}
         >
           Billing Process
+        </button>
+        <button
+          className={activeWorkspace === "analytics" ? "active" : ""}
+          type="button"
+          onClick={() => { setActiveWorkspace("analytics"); setAnalyticsTab("stock"); }}
+        >
+          Analysis Dashboard
+        </button>
+        <button
+          className={activeWorkspace === "customers" ? "active" : ""}
+          type="button"
+          onClick={() => setActiveWorkspace("customers")}
+        >
+          Customer Details
         </button>
       </nav>
 
@@ -748,7 +922,7 @@ export default function App() {
             </div>
           </section>
         </>
-      ) : (
+      ) : activeWorkspace === "billing" ? (
         <section className="card">
           <h2>Billing Counter</h2>
           <div className="row">
@@ -1048,7 +1222,429 @@ export default function App() {
             )}
           </div>
         </section>
-      )}
+      ) : activeWorkspace === "analytics" ? (
+        <>
+          <nav className="analytics-tabs">
+            <button
+              className={analyticsTab === "stock" ? "active" : ""}
+              onClick={() => setAnalyticsTab("stock")}
+            >
+              Stock Analysis
+            </button>
+            <button
+              className={analyticsTab === "sales" ? "active" : ""}
+              onClick={() => setAnalyticsTab("sales")}
+            >
+              Sales Analysis
+            </button>
+          </nav>
+
+          {analyticsTab === "stock" && stockAnalysis && (
+            <section className="card">
+              <h2>Stock Analysis</h2>
+              <div className="analytics-summary">
+                <div className="analytics-card">
+                  <span>Total Products</span>
+                  <strong>{stockAnalysis.total_products}</strong>
+                </div>
+                <div className="analytics-card">
+                  <span>Low Stock Items</span>
+                  <strong>{stockAnalysis.low_stock_count}</strong>
+                </div>
+                <div className="analytics-card">
+                  <span>High Stock Items</span>
+                  <strong>{stockAnalysis.high_stock_count}</strong>
+                </div>
+                <div className="analytics-card">
+                  <span>Total Inventory Value (Cost)</span>
+                  <strong>Rs {stockAnalysis.total_inventory_value.toFixed(2)}</strong>
+                </div>
+                <div className="analytics-card">
+                  <span>Total Potential Revenue</span>
+                  <strong>Rs {stockAnalysis.total_potential_revenue.toFixed(2)}</strong>
+                </div>
+              </div>
+
+              <div className="chart-toolbar">
+                <label>
+                  Filter:
+                  <select value={dashboardFilter} onChange={(e) => {
+                    const nextVal = e.target.value;
+                    setDashboardFilter(nextVal);
+                    loadDashboardAnalytics(nextVal);
+                  }}>
+                    <option value="week">Week</option>
+                    <option value="month">Month</option>
+                    <option value="year">Year</option>
+                  </select>
+                </label>
+              </div>
+
+              {dashboardAnalysis && (
+                <>
+                  <div className="chart-card">
+                    <div className="chart-header-row">
+                      <div>
+                        <h3>Live stock intake graph</h3>
+                        <p>{dashboardAnalysis.period.toUpperCase()} stock intake</p>
+                      </div>
+                      <strong>{dashboardAnalysis.stock_summary.total_stock_intake} units</strong>
+                    </div>
+                    <SalesTrendChart points={dashboardAnalysis.stock_intake_trend} />
+                  </div>
+
+                  <div className="analytics-summary details-grid">
+                    <div className="analytics-card">
+                      <span>Total intake</span>
+                      <strong>{dashboardAnalysis.stock_summary.total_stock_intake}</strong>
+                    </div>
+                    <div className="analytics-card">
+                      <span>Inventory value</span>
+                      <strong>Rs {dashboardAnalysis.stock_summary.total_inventory_value.toFixed(2)}</strong>
+                    </div>
+                    <div className="analytics-card">
+                      <span>Low stock items</span>
+                      <strong>{stockAnalysis.low_stock_count}</strong>
+                    </div>
+                    <div className="analytics-card">
+                      <span>High stock items</span>
+                      <strong>{stockAnalysis.high_stock_count}</strong>
+                    </div>
+                  </div>
+
+                  <div className="detail-panels">
+                    <div className="detail-panel">
+                      <h3>Stock by category</h3>
+                      {dashboardAnalysis.stock_by_category.length > 0 ? (
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Category</th>
+                              <th>Stock Qty</th>
+                              <th>Cost Value</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {dashboardAnalysis.stock_by_category.map((item) => (
+                              <tr key={item.category}>
+                                <td>{item.category}</td>
+                                <td>{item.stock_quantity}</td>
+                                <td>Rs {item.stock_value.toFixed(2)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <p>No stock categories available.</p>
+                      )}
+                    </div>
+
+                    <div className="detail-panel">
+                      <h3>Category-wise sales</h3>
+                      {dashboardAnalysis.category_sales.length > 0 ? (
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Category</th>
+                              <th>Sales</th>
+                              <th>Qty</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {dashboardAnalysis.category_sales.map((item) => (
+                              <tr key={item.category}>
+                                <td>{item.category}</td>
+                                <td>Rs {item.total_sales.toFixed(2)}</td>
+                                <td>{item.total_quantity}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <p>No category sales available.</p>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <h3 style={{marginTop: "30px"}}>Low Stock Items ({stockAnalysis.low_stock_items.length})</h3>
+              {stockAnalysis.low_stock_items.length > 0 ? (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Product Name</th>
+                      <th>Barcode</th>
+                      <th>Stock Qty</th>
+                      <th>Buy Price</th>
+                      <th>Sell Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stockAnalysis.low_stock_items.map((item) => (
+                      <tr key={item.id}>
+                        <td>{item.name}</td>
+                        <td>{item.barcode}</td>
+                        <td style={{color: "#dc2626"}}><strong>{item.stock_quantity}</strong></td>
+                        <td>Rs {item.buy_price.toFixed(2)}</td>
+                        <td>Rs {item.sell_price.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p>All items are well stocked!</p>
+              )}
+            </section>
+          )}
+
+          {analyticsTab === "sales" && salesAnalysis && dashboardAnalysis && (
+            <section className="card">
+              <h2>Sales Analysis</h2>
+              <div className="analytics-summary">
+                <div className="analytics-card">
+                  <span>Total Sales Value</span>
+                  <strong>Rs {salesAnalysis.total_sales_value.toFixed(2)}</strong>
+                </div>
+                <div className="analytics-card">
+                  <span>Total Transactions</span>
+                  <strong>{salesAnalysis.total_transactions}</strong>
+                </div>
+                <div className="analytics-card">
+                  <span>Average Transaction Value</span>
+                  <strong>Rs {salesAnalysis.average_transaction_value.toFixed(2)}</strong>
+                </div>
+                <div className="analytics-card">
+                  <span>Items Sold</span>
+                  <strong>{dashboardAnalysis.summary.total_quantity_sold}</strong>
+                </div>
+              </div>
+
+              <div className="chart-toolbar">
+                <label>
+                  Filter:
+                  <select value={dashboardFilter} onChange={(e) => {
+                    const nextVal = e.target.value;
+                    setDashboardFilter(nextVal);
+                    loadDashboardAnalytics(nextVal);
+                  }}>
+                    <option value="week">Week</option>
+                    <option value="month">Month</option>
+                    <option value="year">Year</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="chart-card">
+                <div className="chart-header-row">
+                  <div>
+                    <h3>Live sales graph</h3>
+                    <p>{dashboardAnalysis.period.toUpperCase()} trend</p>
+                  </div>
+                  <strong>Rs {dashboardAnalysis.summary.total_sales_value.toFixed(2)}</strong>
+                </div>
+                <SalesTrendChart points={dashboardAnalysis.sales_trend} />
+              </div>
+
+              <div className="analytics-summary details-grid">
+                <div className="analytics-card">
+                  <span>Best category</span>
+                  <strong>{dashboardAnalysis.best_category.category}</strong>
+                  <small>Rs {dashboardAnalysis.best_category.total_sales.toFixed(2)}</small>
+                </div>
+                <div className="analytics-card">
+                  <span>Lowest category</span>
+                  <strong>{dashboardAnalysis.lowest_category.category}</strong>
+                  <small>Rs {dashboardAnalysis.lowest_category.total_sales.toFixed(2)}</small>
+                </div>
+                <div className="analytics-card">
+                  <span>Average bill</span>
+                  <strong>Rs {dashboardAnalysis.summary.avg_transaction_value.toFixed(2)}</strong>
+                </div>
+                <div className="analytics-card">
+                  <span>Transactions</span>
+                  <strong>{dashboardAnalysis.summary.total_transactions}</strong>
+                </div>
+              </div>
+
+              <div className="detail-panels">
+                <div className="detail-panel">
+                  <h3>Category-wise sales</h3>
+                  {dashboardAnalysis.category_sales.length > 0 ? (
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Category</th>
+                          <th>Sales</th>
+                          <th>Qty</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dashboardAnalysis.category_sales.map((item) => (
+                          <tr key={item.category}>
+                            <td>{item.category}</td>
+                            <td>Rs {item.total_sales.toFixed(2)}</td>
+                            <td>{item.total_quantity}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <p>No category sales available.</p>
+                  )}
+                </div>
+
+                <div className="detail-panel">
+                  <h3>Top selling products</h3>
+                  {salesAnalysis.top_products.length > 0 ? (
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Product</th>
+                          <th>Qty</th>
+                          <th>Revenue</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {salesAnalysis.top_products.map((product, index) => (
+                          <tr key={index}>
+                            <td>{product.name}</td>
+                            <td>{product.total_quantity_sold}</td>
+                            <td>Rs {product.total_revenue.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <p>No sales data available.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="detail-panels">
+                <div className="detail-panel">
+                  <h3>Payment mode breakdown</h3>
+                  {salesAnalysis.payment_modes.length > 0 ? (
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Mode</th>
+                          <th>Count</th>
+                          <th>Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {salesAnalysis.payment_modes.map((mode, index) => (
+                          <tr key={index}>
+                            <td>{mode.mode.toUpperCase()}</td>
+                            <td>{mode.count}</td>
+                            <td>Rs {mode.total.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <p>No payment data available.</p>
+                  )}
+                </div>
+
+                <div className="detail-panel">
+                  <h3>Stock by category</h3>
+                  {dashboardAnalysis.stock_by_category.length > 0 ? (
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Category</th>
+                          <th>Stock Qty</th>
+                          <th>Cost</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dashboardAnalysis.stock_by_category.map((item) => (
+                          <tr key={item.category}>
+                            <td>{item.category}</td>
+                            <td>{item.stock_quantity}</td>
+                            <td>Rs {item.stock_value.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <p>No stock categories available.</p>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+        </>
+      ) : activeWorkspace === "customers" ? (
+        <section className="card">
+          <h2>Customer Details</h2>
+          <div className="analytics-summary">
+            <div className="analytics-card">
+              <span>Total Customers</span>
+              <strong>{customersAnalysis ? customersAnalysis.total_customers : 0}</strong>
+            </div>
+          </div>
+
+          <h3 style={{marginTop: "30px"}}>Customer List</h3>
+          {customersAnalysis && customersAnalysis.customers.length > 0 ? (
+            <table>
+              <thead>
+                <tr>
+                  <th>Customer Name</th>
+                  <th>Mobile Number</th>
+                  <th>Purchase Count</th>
+                  <th>Total Spent</th>
+                  <th>Average Purchase</th>
+                  <th>Last Purchase</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customersAnalysis.customers.map((customer, index) => {
+                  const rowKey = `${customer.phone}-${customer.name}-${index}`;
+                  const isCopied = copiedPhoneKey === rowKey;
+
+                  return (
+                    <tr key={rowKey}>
+                      <td>{customer.name}</td>
+                      <td>
+                        <span className="customer-phone-cell">
+                          {customer.phone}
+                          <button
+                            type="button"
+                            className={`secondary-button inline-copy-button${isCopied ? " copied" : ""}`}
+                            onClick={() => handleCopyPhone(customer.phone, rowKey)}
+                            title={isCopied ? "Copied" : `Copy ${customer.phone}`}
+                            aria-label={isCopied ? `Copied ${customer.phone}` : `Copy ${customer.phone}`}
+                          >
+                            {isCopied ? <CheckIcon /> : <CopyIcon />}
+                          </button>
+                          <button
+                            type="button"
+                            className="secondary-button inline-edit-button"
+                            onClick={() => handleEditCustomer(customer)}
+                            title={`Edit ${customer.name}`}
+                            aria-label={`Edit ${customer.name}`}
+                          >
+                            <EditIcon />
+                          </button>
+                        </span>
+                      </td>
+                      <td>{customer.purchase_count}</td>
+                      <td><strong>Rs {customer.total_spent.toFixed(2)}</strong></td>
+                      <td>Rs {customer.average_purchase.toFixed(2)}</td>
+                      <td>{customer.last_purchase_date ? new Date(customer.last_purchase_date).toLocaleDateString() : "N/A"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <p>No customer data available.</p>
+          )}
+        </section>
+      ) : null}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 from decimal import Decimal
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -113,3 +114,37 @@ def create_sale(
         sold_at=sale.sold_at,
         items=label_items,
     )
+
+
+@router.get("/sales/monthly/current")
+def get_monthly_sales(
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    """Get total sales value for the current month (1st to last day of current month)"""
+    today = datetime.now()
+    
+    # First day of current month
+    first_day = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    # First day of next month
+    if today.month == 12:
+        last_day = today.replace(year=today.year + 1, month=1, day=1) - timedelta(seconds=1)
+    else:
+        last_day = today.replace(month=today.month + 1, day=1) - timedelta(seconds=1)
+    
+    # Query sales for current month
+    sales = db.query(Sale).filter(
+        Sale.sold_at >= first_day,
+        Sale.sold_at <= last_day
+    ).all()
+    
+    total_sales = sum(sale.total_amount for sale in sales) if sales else Decimal("0")
+    
+    return {
+        "month": today.strftime("%B %Y"),
+        "total_sales": float(total_sales),
+        "sales_count": len(sales),
+        "start_date": first_day.isoformat(),
+        "end_date": last_day.isoformat()
+    }
