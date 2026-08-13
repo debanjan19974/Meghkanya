@@ -2,7 +2,7 @@ from collections import defaultdict
 from decimal import Decimal
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
@@ -10,6 +10,7 @@ from app.models.product import Product
 from app.models.sale import Sale, SaleItem
 from app.models.stock_ledger import StockLedger
 from app.models.user import User
+from app.schemas.billing import CustomerUpdateRequest
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -373,3 +374,32 @@ def get_customers_analysis(
             for c in sorted_customers
         ]
     }
+
+
+@router.patch("/customers/{customer_phone}")
+def update_customer_details(
+    customer_phone: str,
+    payload: CustomerUpdateRequest,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    """Correct the customer details recorded on all of their invoices."""
+    original_phone = customer_phone.strip()
+    name = payload.customer_name.strip()
+    phone = payload.customer_phone.strip()
+
+    if not name:
+        raise HTTPException(status_code=400, detail="Customer name is required")
+    if not phone:
+        raise HTTPException(status_code=400, detail="Customer mobile number is required")
+
+    sales = db.query(Sale).filter(Sale.customer_phone == original_phone).all()
+    if not sales:
+        raise HTTPException(status_code=404, detail="Customer record not found")
+
+    for sale in sales:
+        sale.customer_name = name
+        sale.customer_phone = phone
+
+    db.commit()
+    return {"message": "Customer details updated", "updated_sales": len(sales)}
