@@ -63,6 +63,19 @@ export async function listProducts(token, params = {}) {
   return res.json();
 }
 
+export async function updateProduct(token, productId, payload) {
+  const res = await fetch(`${API_BASE}/products/${productId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(await readErrorMessage(res, "Product update failed"));
+  return res.json();
+}
+
 export async function adjustStock(token, payload) {
   const res = await fetch(`${API_BASE}/inventory/adjust`, {
     method: "POST",

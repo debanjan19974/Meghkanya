@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 
 from pydantic import BaseModel
@@ -23,14 +24,21 @@ class SaleLabelItem(BaseModel):
     name: str
     barcode: str
     quantity: int
+    selling_price: Decimal
+    line_total: Decimal
     shipment_barcode: str
 
 
 class SaleResponse(BaseModel):
     sale_id: int
     invoice_no: str
+    payment_mode: str
+    subtotal: Decimal
+    discount_amount: Decimal
+    gst_amount: Decimal
     total_amount: Decimal
     customer_name: str
     customer_phone: str
     shipping_address: str
+    sold_at: datetime
     items: list[SaleLabelItem]

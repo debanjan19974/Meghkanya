@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { adjustStock, createProduct, createSale, listProducts, login, resetPassword } from "./api";
+import { adjustStock, createProduct, createSale, listProducts, login, resetPassword, updateProduct } from "./api";
 
 const defaultProduct = {
   barcode: "",
@@ -8,6 +8,17 @@ const defaultProduct = {
   buy_price: "",
   sell_price: "",
   stock_quantity: 0
+};
+
+const defaultEditProduct = {
+  id: null,
+  barcode: "",
+  name: "",
+  category: "",
+  buy_price: "",
+  sell_price: "",
+  stock_quantity: 0,
+  is_active: true
 };
 
 export default function App() {
@@ -32,6 +43,7 @@ export default function App() {
   const [barcode, setBarcode] = useState("");
   const [scanResult, setScanResult] = useState(null);
   const [productForm, setProductForm] = useState(defaultProduct);
+  const [editProduct, setEditProduct] = useState(defaultEditProduct);
   const [stockChange, setStockChange] = useState("1");
   const [billBarcode, setBillBarcode] = useState("");
   const [cart, setCart] = useState([]);
@@ -42,6 +54,12 @@ export default function App() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [shippingAddress, setShippingAddress] = useState("");
   const [lastInvoice, setLastInvoice] = useState(null);
+  const companyInfo = {
+    name: "Meghkanya",
+    address: "Colonelgola, Midnapore, West Bengal 721101",
+    phone: "95475 99371",
+    email: "Meghkanya.official@gmail.com"
+  };
   const [message, setMessage] = useState("");
   const barcodeInputRef = useRef(null);
   const billingBarcodeInputRef = useRef(null);
@@ -143,6 +161,49 @@ export default function App() {
     } catch (err) {
       setMessage(err?.message || "Product create failed.");
     }
+  }
+
+  function handleEditClick(product) {
+    setEditProduct({
+      id: product.id,
+      barcode: product.barcode,
+      name: product.name || "",
+      category: product.category || "",
+      buy_price: product.buy_price || "",
+      sell_price: product.sell_price || "",
+      stock_quantity: product.stock_quantity || 0,
+      is_active: product.is_active ?? true
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function handleEditFieldChange(field, value) {
+    setEditProduct((prev) => ({ ...prev, [field]: value }));
+  }
+
+  async function handleUpdateProduct(e) {
+    e.preventDefault();
+    if (!editProduct.id) return;
+    setMessage("");
+    try {
+      await updateProduct(token, editProduct.id, {
+        name: editProduct.name,
+        category: editProduct.category,
+        buy_price: Number(editProduct.buy_price),
+        sell_price: Number(editProduct.sell_price),
+        stock_quantity: Number(editProduct.stock_quantity),
+        is_active: editProduct.is_active
+      });
+      setEditProduct(defaultEditProduct);
+      await loadProducts();
+      setMessage("Product updated successfully.");
+    } catch (err) {
+      setMessage(err?.message || "Product update failed.");
+    }
+  }
+
+  function cancelEdit() {
+    setEditProduct(defaultEditProduct);
   }
 
   async function handleBarcodeSearch(code) {
@@ -275,6 +336,18 @@ export default function App() {
     }
   }
 
+  const lowStockCount = useMemo(
+    () => products.filter((item) => Number(item.stock_quantity) <= 5).length,
+    [products]
+  );
+  const totalStockValue = useMemo(
+    () =>
+      products.reduce(
+        (sum, item) => sum + Number(item.sell_price || 0) * Number(item.stock_quantity || 0),
+        0
+      ),
+    [products]
+  );
   const billingSubtotal = useMemo(
     () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
     [cart]
@@ -287,8 +360,8 @@ export default function App() {
   if (!token) {
     return (
       <div className="auth-page">
-        <img className="auth-logo" src="/logo/maghkanyalogo.jpeg" alt="Meghkanya" />
         <section className="auth-card">
+          <img className="auth-logo" src="/logo/maghkanyalogo.jpeg" alt="Meghkanya" />
           <div className="brand-block">
             <p className="eyebrow">Inventory and Billing</p>
             <h1>Meghkanya</h1>
@@ -415,12 +488,31 @@ export default function App() {
         <div>
           <p className="eyebrow">Inventory and Billing</p>
           <h1>Meghkanya</h1>
-          <p>Barcode-first inventory management and checkout workspace.</p>
+          <p>Barcode-first inventory management and checkout workspace with fast product lookup and sales flow.</p>
         </div>
         <button className="secondary-button" onClick={handleLogout}>
           Logout
         </button>
       </header>
+
+      <div className="summary-cards">
+        <div className="summary-card">
+          <span>Total Products</span>
+          <strong>{products.length}</strong>
+        </div>
+        <div className="summary-card">
+          <span>Low Stock Items</span>
+          <strong>{lowStockCount}</strong>
+        </div>
+        <div className="summary-card">
+          <span>Stock Value</span>
+          <strong>Rs {totalStockValue.toFixed(2)}</strong>
+        </div>
+        <div className="summary-card">
+          <span>Current Cart</span>
+          <strong>{cart.length} items</strong>
+        </div>
+      </div>
 
       {message && <div className="message">{message}</div>}
 
@@ -444,11 +536,19 @@ export default function App() {
       {activeWorkspace === "products" ? (
         <>
           <section className="card">
-            <h2>Barcode Scan</h2>
+            <div className="section-headline">
+              <div>
+                <h2>Product Lookup</h2>
+                <p className="help-text">Scan a barcode or enter one manually to view stock and update inventory quickly.</p>
+              </div>
+              <button className="secondary-button" type="button" onClick={loadProducts}>
+                Refresh Products
+              </button>
+            </div>
             <div className="row">
               <input
                 ref={barcodeInputRef}
-                placeholder="Scan barcode here (USB scanner)"
+                placeholder="Scan or type barcode here"
                 value={barcode}
                 onChange={(e) => setBarcode(e.target.value)}
                 onKeyDown={(e) => {
@@ -462,15 +562,23 @@ export default function App() {
             </div>
             {scanResult && (
               <div className="scan-box">
-                <strong>{scanResult.name}</strong>
-                <span>Barcode: {scanResult.barcode}</span>
-                <span>Selling Price: Rs {scanResult.sell_price}</span>
-                <span>Stock: {scanResult.stock_quantity}</span>
+                <div className="section-headline">
+                  <strong>{scanResult.name}</strong>
+                  <span className="badge">{scanResult.category || "No category"}</span>
+                </div>
+                <div className="grid grid-2">
+                  <div>Barcode: {scanResult.barcode}</div>
+                  <div>Stock: {scanResult.stock_quantity}</div>
+                  <div>Buy Price: Rs {scanResult.buy_price}</div>
+                  <div>Sell Price: Rs {scanResult.sell_price}</div>
+                </div>
                 <div className="row">
                   <input
                     type="number"
+                    min="-999"
                     value={stockChange}
                     onChange={(e) => setStockChange(e.target.value)}
+                    aria-label="Stock adjustment amount"
                   />
                   <button onClick={handleAdjustStock}>Adjust Stock</button>
                 </div>
@@ -479,8 +587,13 @@ export default function App() {
           </section>
 
           <section className="card">
-            <h2>Add Product</h2>
-            <form className="grid" onSubmit={handleCreateProduct}>
+            <div className="section-headline">
+              <div>
+                <h2>Add New Product</h2>
+                <p className="help-text">Add your saree products, set pricing, and enter opening stock levels.</p>
+              </div>
+            </div>
+            <form className="grid product-form" onSubmit={handleCreateProduct}>
               <input
                 required
                 placeholder="Barcode"
@@ -524,6 +637,115 @@ export default function App() {
               />
               <button type="submit">Save Product</button>
             </form>
+
+            {editProduct.id && (
+              <div className="edit-card card">
+                <div className="section-headline">
+                  <div>
+                    <h2>Edit Product</h2>
+                    <p className="help-text">Update product details. SKU is fixed and cannot be changed.</p>
+                  </div>
+                </div>
+                <form className="grid product-form" onSubmit={handleUpdateProduct}>
+                  <input disabled placeholder="Barcode (SKU)" value={editProduct.barcode} />
+                  <input
+                    required
+                    placeholder="Name"
+                    value={editProduct.name}
+                    onChange={(e) => handleEditFieldChange("name", e.target.value)}
+                  />
+                  <input
+                    placeholder="Category"
+                    value={editProduct.category}
+                    onChange={(e) => handleEditFieldChange("category", e.target.value)}
+                  />
+                  <input
+                    required
+                    type="number"
+                    step="0.01"
+                    placeholder="Buy Price"
+                    value={editProduct.buy_price}
+                    onChange={(e) => handleEditFieldChange("buy_price", e.target.value)}
+                  />
+                  <input
+                    required
+                    type="number"
+                    step="0.01"
+                    placeholder="Sell Price"
+                    value={editProduct.sell_price}
+                    onChange={(e) => handleEditFieldChange("sell_price", e.target.value)}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Stock Quantity"
+                    value={editProduct.stock_quantity}
+                    onChange={(e) => handleEditFieldChange("stock_quantity", e.target.value)}
+                  />
+                  <div className="checkbox-row">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={editProduct.is_active}
+                        onChange={(e) => handleEditFieldChange("is_active", e.target.checked)}
+                      />
+                      Active
+                    </label>
+                  </div>
+                  <div className="button-row">
+                    <button type="submit">Save Changes</button>
+                    <button type="button" className="secondary-button" onClick={cancelEdit}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </section>
+
+          <section className="card">
+            <div className="section-headline">
+              <div>
+                <h2>Inventory List</h2>
+                <p className="help-text">Products are ordered by latest added. Low stock items are highlighted for easy restocking.</p>
+              </div>
+            </div>
+            <div className="table-wrapper">
+              <table className="product-table">
+                <thead>
+                  <tr>
+                    <th>SKU</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map((item) => (
+                    <tr key={item.id} className={Number(item.stock_quantity) <= 5 ? "row-low-stock" : ""}>
+                      <td>{item.barcode}</td>
+                      <td>{item.name}</td>
+                      <td>{item.category || "—"}</td>
+                      <td>Rs {Number(item.sell_price).toFixed(2)}</td>
+                      <td>{item.stock_quantity}</td>
+                      <td>
+                        <button type="button" onClick={() => handleEditClick(item)}>
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {!products.length && (
+                    <tr>
+                      <td colSpan={5} className="empty-state">
+                        No products yet. Add a product to start managing inventory.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </section>
         </>
       ) : (
@@ -647,61 +869,182 @@ export default function App() {
             <button onClick={checkoutSale}>Checkout Sale</button>
             {lastInvoice && (
               <div className="invoice-note">
-                <p>
-                  Last Invoice: {lastInvoice.invoice_no} | Amount: Rs {Number(lastInvoice.total_amount).toFixed(2)}
-                </p>
-                <p>Customer: {lastInvoice.customer_name} | {lastInvoice.customer_phone}</p>
-                <p>Shipping: {lastInvoice.shipping_address}</p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const printWindow = window.open("", "_blank");
-                    if (!printWindow) return;
-                    const labelHtml = `<!DOCTYPE html>
-                      <html>
-                        <head>
-                          <meta charset="utf-8" />
-                          <title>Shipment Labels - ${lastInvoice.invoice_no}</title>
-                          <style>
-                            body { font-family: Arial, sans-serif; margin: 16px; }
-                            .print-header { margin-bottom: 16px; }
-                            .label { border: 1px solid #333; padding: 12px; margin-bottom: 16px; }
-                            .label strong { display: block; margin-bottom: 4px; }
-                            .barcode { font-family: monospace; font-size: 14px; margin: 8px 0; }
-                          </style>
-                        </head>
-                        <body>
-                          <div class="print-header">
-                            <h1>Shipment Labels</h1>
-                            <p><strong>Invoice:</strong> ${lastInvoice.invoice_no}</p>
-                            <p><strong>Customer:</strong> ${lastInvoice.customer_name}</p>
-                            <p><strong>Phone:</strong> ${lastInvoice.customer_phone}</p>
-                            <p><strong>Address:</strong> ${lastInvoice.shipping_address}</p>
-                          </div>
-                          ${lastInvoice.items
-                            .map(
-                              (item, index) => `
-                                <div class="label">
-                                  <h2>Item ${index + 1}</h2>
-                                  <strong>Product:</strong> ${item.name}
-                                  <strong>SKU Barcode:</strong> ${item.barcode}
-                                  <div class="barcode">Shipment ID: ${item.shipment_barcode}</div>
-                                  <strong>Quantity:</strong> ${item.quantity}
-                                </div>
-                              `
-                            )
-                            .join("")}
-                        </body>
-                      </html>`;
-                    printWindow.document.write(labelHtml);
-                    printWindow.document.close();
-                    printWindow.focus();
-                    printWindow.print();
-                  }}
-                >
-                  Print Shipment Labels
-                </button>
+              <div className="invoice-preview">
+                <div className="invoice-header">
+                  <div className="shipping-block">
+                    <strong>Shipping Address</strong>
+                    <p>{lastInvoice.customer_name}</p>
+                    <p>{lastInvoice.shipping_address}</p>
+                    <p>{lastInvoice.customer_phone}</p>
+                  </div>
+                  <div className="invoice-meta">
+                    <p><strong>Invoice:</strong> {lastInvoice.invoice_no}</p>
+                    <p><strong>Sale Date:</strong> {new Date(lastInvoice.sold_at).toLocaleString()}</p>
+                    <p><strong>Payment:</strong> {lastInvoice.payment_mode}</p>
+                  </div>
+                </div>
+
+                <div className="invoice-buyer">
+                  <div>
+                    <strong>Bill To</strong>
+                    <p>{lastInvoice.customer_name}</p>
+                    <p>{lastInvoice.customer_phone}</p>
+                  </div>
+                </div>
+
+                <table className="invoice-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Product</th>
+                      <th>Price</th>
+                      <th>Qty</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lastInvoice.items.map((item, index) => (
+                      <tr key={item.product_id}>
+                        <td>{index + 1}</td>
+                        <td>{item.name}</td>
+                        <td>Rs {Number(item.selling_price).toFixed(2)}</td>
+                        <td>{item.quantity}</td>
+                        <td>Rs {Number(item.line_total).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div className="invoice-summary">
+                  <div>
+                    <p>Subtotal: Rs {Number(lastInvoice.subtotal).toFixed(2)}</p>
+                    <p>Discount: Rs {Number(lastInvoice.discount_amount).toFixed(2)}</p>
+                  </div>
+                  <div className="total-box">
+                    <strong>Total Payable</strong>
+                    <strong>Rs {Number(lastInvoice.total_amount).toFixed(2)}</strong>
+                  </div>
+                </div>
+
+                <div className="invoice-footer">
+                  <div className="company-info">
+                    <h4>{companyInfo.name}</h4>
+                    <p>{companyInfo.address}</p>
+                    <p>WhatsApp: {companyInfo.phone}</p>
+                    <p>Email: {companyInfo.email}</p>
+                  </div>
+                  <div className="invoice-signature">
+                    <p>Authorized Signatory</p>
+                    <div className="signature-box image-signature">
+                      <img src="/logo/Signeture.png" alt="Authorized signature" />
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const printWindow = window.open("", "_blank");
+                  if (!printWindow) return;
+                  const labelHtml = `<!DOCTYPE html>
+                    <html>
+                      <head>
+                        <meta charset="utf-8" />
+                        <title>Invoice - ${lastInvoice.invoice_no}</title>
+                        <style>
+                          body { font-family: Arial, sans-serif; margin: 24px; color: #1f2937; }
+                          .header, .footer { margin-bottom: 20px; }
+                          .header h1 { margin: 0; font-size: 28px; color: #075985; }
+                          .header p { margin: 4px 0; color: #334155; }
+                          .details, .summary { margin-top: 20px; width: 100%; }
+                          .details td, .summary td { padding: 8px 6px; }
+                          table { width: 100%; border-collapse: collapse; margin-top: 18px; }
+                          th, td { border: 1px solid #cbd5e1; padding: 10px 12px; text-align: left; }
+                          th { background: #eff6ff; }
+                          .total-row td { font-weight: 700; }
+                          .signature-box { margin-top: 30px; padding: 16px; border: 1px dashed #0f172a; width: 260px; text-align: center; color: #0f172a; }
+                        </style>
+                      </head>
+                      <body>
+                        <div class="header-grid">
+                          <div class="header-left">
+                            <strong>Shipping Address</strong>
+                            <p>${lastInvoice.customer_name}</p>
+                            <p>${lastInvoice.shipping_address}</p>
+                            <p>${lastInvoice.customer_phone}</p>
+                          </div>
+                          <div class="header-right">
+                            <table>
+                              <tr><td><strong>Invoice</strong></td><td>${lastInvoice.invoice_no}</td></tr>
+                              <tr><td><strong>Sale Date</strong></td><td>${new Date(lastInvoice.sold_at).toLocaleString()}</td></tr>
+                              <tr><td><strong>Payment</strong></td><td>${lastInvoice.payment_mode}</td></tr>
+                            </table>
+                          </div>
+                        </div>
+                        <div class="details">
+                          <table>
+                            <tr><td><strong>Bill To</strong></td><td>${lastInvoice.customer_name}</td></tr>
+                            <tr><td><strong>Phone</strong></td><td>${lastInvoice.customer_phone}</td></tr>
+                          </table>
+                        </div>
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>#</th>
+                              <th>Product</th>
+                              <th>Price</th>
+                              <th>Qty</th>
+                              <th>Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            ${lastInvoice.items
+                              .map(
+                                (item, index) => `
+                                  <tr>
+                                    <td>${index + 1}</td>
+                                    <td>${item.name}</td>
+                                    <td>Rs ${Number(item.selling_price).toFixed(2)}</td>
+                                    <td>${item.quantity}</td>
+                                    <td>Rs ${Number(item.line_total).toFixed(2)}</td>
+                                  </tr>
+                                `
+                              )
+                              .join("")}
+                          </tbody>
+                        </table>
+                        <div class="summary">
+                          <table>
+                            <tr><td><strong>Subtotal</strong></td><td>Rs ${Number(lastInvoice.subtotal).toFixed(2)}</td></tr>
+                            <tr><td><strong>Discount</strong></td><td>Rs ${Number(lastInvoice.discount_amount).toFixed(2)}</td></tr>
+                            <tr class="total-row"><td><strong>Total Payable</strong></td><td>Rs ${Number(lastInvoice.total_amount).toFixed(2)}</td></tr>
+                          </table>
+                        </div>
+                        <div class="footer-grid">
+                          <div class="footer-left">
+                            <h2>${companyInfo.name}</h2>
+                            <p>${companyInfo.address}</p>
+                            <p>WhatsApp: ${companyInfo.phone}</p>
+                            <p>Email: ${companyInfo.email}</p>
+                          </div>
+                          <div class="footer-right">
+                            <div class="signature-box">
+                              <img src="/logo/Signeture.png" alt="Authorized signature" style="max-width: 100%; height: auto;" />
+                            </div>
+                          </div>
+                        </div>
+                      </body>
+                    </html>`;
+                  printWindow.document.write(labelHtml);
+                  printWindow.document.close();
+                  printWindow.focus();
+                  printWindow.print();
+                }}
+              >
+                Print Invoice
+              </button>
+            </div>
             )}
           </div>
         </section>
